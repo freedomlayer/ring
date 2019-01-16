@@ -12,8 +12,17 @@
 // OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
 // CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+/// A witness indicating that CPU features have been detected and cached.
+///
+/// This is a zero-sized type so that it can be "stored" wherever convenient.
+/// Eventually all use of feature detection will be done through things
+/// depending on `Features` to prevent any attempts to use the cached results
+/// of feature detection before they've actually been written.
+#[derive(Copy, Clone)]
+pub(crate) struct Features(());
+
 #[inline(always)]
-pub fn cache_detected_features() {
+pub(crate) fn features() -> Features {
     #[cfg(not(target_os = "ios"))]
     {
         use std;
@@ -23,4 +32,6 @@ pub fn cache_detected_features() {
         static INIT: std::sync::Once = std::sync::ONCE_INIT;
         INIT.call_once(|| unsafe { GFp_cpuid_setup() });
     }
+
+    Features(())
 }
