@@ -250,7 +250,7 @@ fn detect_implementation(cpu: cpu::Features) -> Implementation {
 
     #[cfg(target_arch = "arm")]
     {
-        if cpu::is_simd_capable() {
+        if cpu::arm::NEON.available(cpu) {
             return Implementation::NEON;
         }
     }
