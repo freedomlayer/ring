@@ -80,9 +80,15 @@ pub(crate) mod arm {
     }
 
     // Keep in sync with `ARMV7_NEON`.
-    #[cfg(target_arch = "arm")]
+    #[cfg(any(target_arch = "aarch64", target_arch = "arm"))]
     pub(crate) const NEON: Feature = Feature {
         mask: 1 << 0,
+        ios: true,
+    };
+
+    // Keep in sync with `ARMV8_AES`.
+    pub(crate) const AES: Feature = Feature {
+        mask: 1 << 2,
         ios: true,
     };
 
@@ -91,6 +97,14 @@ pub(crate) mod arm {
         mask: 1 << 5,
         ios: true,
     };
+
+    #[cfg(all(
+        any(target_os = "android", target_os = "linux"),
+        any(target_arch = "aarch64", target_arch = "arm")
+    ))]
+    extern "C" {
+        static mut GFp_armcap_P: u32;
+    }
 }
 
 #[cfg_attr(
@@ -131,10 +145,20 @@ pub(crate) mod intel {
         mask: 1 << 1,
     };
 
+    pub(crate) const SSSE3: Feature = Feature {
+        word: 1,
+        mask: 1 << 9,
+    };
+
     #[cfg(target_arch = "x86_64")]
     pub(crate) const MOVBE: Feature = Feature {
         word: 1,
         mask: 1 << 22,
+    };
+
+    pub(crate) const AES: Feature = Feature {
+        word: 1,
+        mask: 1 << 25,
     };
 
     #[cfg(target_arch = "x86_64")]
@@ -153,5 +177,4 @@ pub(crate) mod intel {
             assert_eq!((AVX.mask | MOVBE.mask) >> 22, 0x41);
         }
     }
-
 }
