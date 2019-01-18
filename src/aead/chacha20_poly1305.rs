@@ -18,7 +18,7 @@ use super::{
     poly1305, Aad, Block, Direction, Nonce, Tag, BLOCK_LEN,
 };
 use crate::{
-    aead,
+    aead, cpu,
     endian::*,
     error,
     polyfill::{self, convert::*},
@@ -39,19 +39,23 @@ pub static CHACHA20_POLY1305: aead::Algorithm = aead::Algorithm {
 };
 
 /// Copies |key| into |ctx_buf|.
-fn chacha20_poly1305_init(key: &[u8]) -> Result<aead::KeyInner, error::Unspecified> {
+fn chacha20_poly1305_init(
+    key: &[u8], _todo: cpu::Features,
+) -> Result<aead::KeyInner, error::Unspecified> {
     let key: &[u8; chacha::KEY_LEN] = key.try_into_()?;
     Ok(aead::KeyInner::ChaCha20Poly1305(chacha::Key::from(key)))
 }
 
 fn chacha20_poly1305_seal<'a>(
     key: &aead::KeyInner, nonce: Nonce, aad: Aad<'a>, in_out: &mut [u8],
+    cpu_features: cpu::Features,
 ) -> Tag {
-    aead(key, nonce, aad, in_out, Direction::Sealing)
+    aead(key, nonce, aad, in_out, Direction::Sealing, cpu_features)
 }
 
 fn chacha20_poly1305_open<'a>(
     key: &aead::KeyInner, nonce: Nonce, aad: Aad<'a>, in_prefix_len: usize, in_out: &mut [u8],
+    cpu_features: cpu::Features,
 ) -> Tag {
     aead(
         key,
@@ -59,6 +63,7 @@ fn chacha20_poly1305_open<'a>(
         aad,
         in_out,
         Direction::Opening { in_prefix_len },
+        cpu_features,
     )
 }
 
@@ -67,6 +72,7 @@ pub type Key = chacha::Key;
 #[inline(always)] // Statically eliminate branches on `direction`.
 fn aead<'a>(
     key: &aead::KeyInner, nonce: Nonce, Aad(aad): Aad<'a>, in_out: &mut [u8], direction: Direction,
+    _todo: cpu::Features,
 ) -> Tag {
     let chacha20_key = match key {
         aead::KeyInner::ChaCha20Poly1305(key) => key,
